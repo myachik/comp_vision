@@ -25,7 +25,7 @@ cv2.createTrackbar('minpixels', 'areas', 5, 1000, minpixels)
 ret = False
 while not ret:
     ret, frame = cap.read()
-frame = (cv2.resize(frame, (150, 150)) / 255.0).astype(np.float32)
+frame = (cv2.resize(frame, (300, 300)) / 255.0).astype(np.float32)
 
 subt = cv2.BackgroundSubtractorMOG(10, 3, 0.8, 3)
 
@@ -33,7 +33,7 @@ while(True):
     ret, frame = cap.read()
 
     if ret:
-        frame = (cv2.resize(frame, (150, 150)) / 255.0).astype(np.float32)
+        frame = (cv2.resize(frame, (300, 300)) / 255.0).astype(np.float32)
 
         mask_bin = subt.apply((frame * 255).astype(np.uint8))
 

@@ -80,7 +80,7 @@ def neighbours(coors):
 def areas_two_pass(image, minpixels=10):
     height, width = image.shape
 
-    connected = np.zeros_like(image)
+    connected = np.zeros_like(image, dtype=np.uint8)
 
     objects = 0
     regions = {}
@@ -111,6 +111,8 @@ def areas_two_pass(image, minpixels=10):
                     if west_label != north_label and not {west_label, north_label} in equivalences:
                         equivalences.append({west_label, north_label})
                         merge(equivalences)
+                        if west_label == 0 or north_label == 0:
+                            print("loh")
 
     merge(equivalences)
 
@@ -197,8 +199,8 @@ def contour_coors_to_complex(contour):
     return result
 
 if __name__ == '__main__':
-    test = cv2.imread('test.tiff')[:, :, 1]
-    #test = np.array([[0,1,1,0,0,1], [1,1,1,1,0,1], [0,1,0,0,0,1], [0,0,0,1,1,1], [0,0,0,1,1,1]])
+    test = cv2.imread('test.jpeg')[:, :, 1]
+    # test = np.array([[0,1,1,0,0,1], [1,1,1,1,0,1], [0,1,0,0,0,1], [0,0,0,1,1,1], [0,0,0,1,1,1]])
     test_out = areas_two_pass(test, 10)
     contours = contours_moore(test_out)
     contours = [contour_coors_to_complex(contour) for contour in contours]
