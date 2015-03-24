@@ -80,7 +80,7 @@ def neighbours(coors):
 def areas_two_pass(image, minpixels=10):
     height, width = image.shape
 
-    connected = np.zeros_like(image, dtype=np.uint8)
+    connected = np.zeros_like(image, dtype=np.uint16)
 
     objects = 0
     regions = {}
@@ -196,12 +196,52 @@ def contour_coors_to_complex(contour):
         x, y = contour[j] - contour[i]
         result[i] = complex(x, y)
 
+    s = np.sum(result)
+    result += s/len(contour)
+
     return result
 
-if __name__ == '__main__':
-    test = cv2.imread('test.jpeg')[:, :, 1]
-    # test = np.array([[0,1,1,0,0,1], [1,1,1,1,0,1], [0,1,0,0,0,1], [0,0,0,1,1,1], [0,0,0,1,1,1]])
-    test_out = areas_two_pass(test, 10)
-    contours = contours_moore(test_out)
-    contours = [contour_coors_to_complex(contour) for contour in contours]
-    cv2.imwrite('test_out.tiff', test_out * 10)
+def contour_reduce(contour, length=None):
+    if length is None:
+        return contour
+    if len(contour) < length:
+        return contour
+    step = int(len(contour) / length)
+    temp = contour[::step]
+    elements_to_delete = len(temp) - length
+    step = int(len(temp) / elements_to_delete)
+
+    temp = np.delete(np.array(temp), np.arange(0, step * elements_to_delete, step), axis=0)
+
+
+    return temp
+
+def draw_complex_contour(complex_contour):
+    width = int(np.sum(np.abs(np.imag(complex_contour))))
+    height = int(np.sum(np.abs(np.real(complex_contour))))
+    img = np.zeros((height, width))
+
+    start = np.complex(int(height/2), int(width/2))
+
+    coors_complex = start + np.add.accumulate(complex_contour)
+
+    contour = []
+
+    for coor in coors_complex:
+        i = int(np.real(coor))
+        j = int(np.imag(coor))
+        contour.append([i, j])
+
+    cv2.drawContours(img, [np.array(contour)], -1, (255, 255, 255))
+
+    return img
+
+#if __name__ == '__main__':
+test = cv2.imread('palm.bmp')[:, :, 1]
+# test = np.array([[0,1,1,0,0,1], [1,1,1,1,0,1], [0,1,0,0,0,1], [0,0,0,1,1,1], [0,0,0,1,1,1]])
+areas = areas_two_pass(test)
+contour = contours_moore(areas)[0]
+contour = contour_reduce(contour, 100)
+complex_contour = contour_coors_to_complex(contour)
+img = draw_complex_contour(complex_contour)
+cv2.imwrite('reduced_palm.tiff', img)
