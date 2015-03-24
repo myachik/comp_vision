@@ -186,7 +186,7 @@ def contours_moore(image, minlength=None):
                     contours.append(contour((i, j), current_label))
                     labels.append(current_label)
     if not minlength is None:
-        contours = [contour for contour in contours if len(contours) >= minlength]
+        contours = [contour for contour in contours if len(contour) >= minlength]
     return tuple(contours)
 
 def contour_coors_to_complex(contour):
