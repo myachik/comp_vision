@@ -236,12 +236,12 @@ def draw_complex_contour(complex_contour):
 
     return img
 
-#if __name__ == '__main__':
-test = cv2.imread('palm.bmp')[:, :, 1]
-# test = np.array([[0,1,1,0,0,1], [1,1,1,1,0,1], [0,1,0,0,0,1], [0,0,0,1,1,1], [0,0,0,1,1,1]])
-areas = areas_two_pass(test)
-contour = contours_moore(areas)[0]
-contour = contour_reduce(contour, 100)
-complex_contour = contour_coors_to_complex(contour)
-img = draw_complex_contour(complex_contour)
-cv2.imwrite('reduced_palm.tiff', img)
+if __name__ == '__main__':
+    test = cv2.imread('palm.bmp')[:, :, 1]
+    # test = np.array([[0,1,1,0,0,1], [1,1,1,1,0,1], [0,1,0,0,0,1], [0,0,0,1,1,1], [0,0,0,1,1,1]])
+    areas = areas_two_pass(test)
+    contour = contours_moore(areas)[0]
+    contour = contour_reduce(contour, 100)
+    complex_contour = contour_coors_to_complex(contour)
+    img = draw_complex_contour(complex_contour)
+    cv2.imwrite('reduced_palm.tiff', img)
