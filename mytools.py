@@ -42,7 +42,7 @@ def areas_depth_first(image, min_pixels=10):
     def neighbours(coors):
         i, j = coors
         ns = [(i, j-1), (i, j+1), (i-1, j), (i+1, j)]
-        return [(k,l) for k,l in ns if 0 <= k < height and 0 <= l < width and tmp_image[k][l] > 0 and connected[k][l] == 0]
+        return [(k,l) for k,l in ns if 0 <= k < height and 0 <= l < width and tmp_image[k, l] > 0 and connected[k, l] == 0]
 
     def fill_neighbours(coors, label):
         pixels = [coors]
@@ -54,19 +54,19 @@ def areas_depth_first(image, min_pixels=10):
             pixels_count += 1
             pixels += neighbours(current_pixel)
             k, l = current_pixel
-            connected[k][l] = label
-            tmp_image[k][l] = 0
+            connected[k, l] = label
+            tmp_image[k, l] = 0
 
         if pixels_count < min_pixels:
             for i,j in regions[label]:
-                connected[i][j] = 0
+                connected[i, j] = 0
             regions.pop(label)
 
         return pixels_count
 
     for i in xrange(height):
         for j in xrange(width):
-            if tmp_image[i][j] > 0:
+            if tmp_image[i, j] > 0:
                 objects += 1
                 pixels_count = fill_neighbours((i,j), objects)
 
@@ -90,24 +90,24 @@ def areas_two_pass(image, minpixels=10):
     for i in xrange(height):
         for j in xrange(width):
 
-            current_value = image[i][j]
+            current_value = image[i, j]
             if current_value:
-                west_value = image[i][j-1] if j >= 1 else 0
-                west_label = connected[i][j-1] if j >= 1 else 0
-                north_value = image[i-1][j] if i >= 1 else 0
-                north_label = connected[i-1][j] if i >= 1 else 0
+                west_value = image[i, j-1] if j >= 1 else 0
+                west_label = connected[i, j-1] if j >= 1 else 0
+                north_value = image[i-1, j] if i >= 1 else 0
+                north_label = connected[i-1, j] if i >= 1 else 0
                 if west_value != current_value and north_value != current_value:
                     objects += 1
-                    connected[i][j] = objects
+                    connected[i, j] = objects
 
                 elif west_value != current_value and north_value == current_value:
-                    connected[i][j] = north_label
+                    connected[i, j] = north_label
 
                 elif west_value == current_value and north_value != current_value:
-                    connected[i][j] = west_label
+                    connected[i, j] = west_label
 
                 elif west_value == current_value and north_value == current_value:
-                    connected[i][j] = north_label
+                    connected[i, j] = north_label
                     if west_label != north_label and not {west_label, north_label} in equivalences:
                         equivalences.append({west_label, north_label})
                         merge(equivalences)
@@ -124,12 +124,12 @@ def areas_two_pass(image, minpixels=10):
             label_map[el] = min_element
     for i in xrange(height):
         for j in xrange(width):
-            connected[i][j] = label_map[connected[i][j]]
+            connected[i, j] = label_map[connected[i, j]]
 
     regions = {}
     for i in xrange(height):
         for j in xrange(width):
-            current_label = connected[i][j]
+            current_label = connected[i, j]
             if current_label in regions:
                 regions[current_label].append((i, j))
             else:
@@ -137,7 +137,7 @@ def areas_two_pass(image, minpixels=10):
     for label, region in regions.items():
         if len(region) < minpixels:
             for i, j in region:
-                connected[i][j] = 0
+                connected[i, j] = 0
 
     return connected
 
@@ -148,7 +148,7 @@ def contours_moore(image, minlength=None):
         if i < 0 or j < 0 or i >= height or j >= width:
             return None
         else:
-            return image[i][j]
+            return image[i, j]
 
     def contour(start, current_label):
         pixels = [start]
@@ -180,7 +180,7 @@ def contours_moore(image, minlength=None):
 
     for i in xrange(height):
         for j in xrange(width):
-            current_label = image[i][j]
+            current_label = image[i, j]
             if current_label != 0:
                 if not (current_label in labels):
                     contours.append(contour((i, j), current_label))
@@ -201,6 +201,23 @@ def contour_coors_to_complex(contour):
 
     return result
 
+def contour_extend(contour, length=None):
+    if length is None:
+        return contour
+    if len(contour) > length:
+        return contour
+
+    while len(contour) < length:
+        edges = np.zeros(len(contour))
+        for i in range(len(contour)):
+            edges[i] = np.linalg.norm(contour[i] - contour[i-1])
+
+        max_edge_index = np.argmax(edges)
+        contour.insert()
+    return contour
+
+
+
 def contour_reduce(contour, length=None):
     if length is None:
         return contour
@@ -209,12 +226,27 @@ def contour_reduce(contour, length=None):
     step = int(len(contour) / length)
     temp = contour[::step]
     elements_to_delete = len(temp) - length
-    step = int(len(temp) / elements_to_delete)
-
-    temp = np.delete(np.array(temp), np.arange(0, step * elements_to_delete, step), axis=0)
-
+    if not elements_to_delete:
+        return temp
+    else:
+        step = int(len(temp) / elements_to_delete)
+        temp = np.delete(np.array(temp), np.arange(0, step * elements_to_delete, step), axis=0)
 
     return temp
+
+def contours_compare(a, b):
+
+    min_length = min([len(a), len(b)])
+
+    a = contour_reduce(a, min_length)
+    b = contour_reduce(b, min_length)
+
+    a = contour_coors_to_complex(a)
+    b = contour_coors_to_complex(b)
+
+    metrics = np.real(np.fft.ifft(np.fft.fft(a) * np.fft.fft(b).conjugate())).max()
+
+    return metrics / min_length
 
 def draw_complex_contour(complex_contour):
     width = int(np.sum(np.abs(np.imag(complex_contour))))
@@ -230,18 +262,23 @@ def draw_complex_contour(complex_contour):
     for coor in coors_complex:
         i = int(np.real(coor))
         j = int(np.imag(coor))
-        contour.append([i, j])
+        contour.append([j, i])
 
     cv2.drawContours(img, [np.array(contour)], -1, (255, 255, 255))
 
     return img
 
-#if __name__ == '__main__':
-test = cv2.imread('palm.bmp')[:, :, 1]
-# test = np.array([[0,1,1,0,0,1], [1,1,1,1,0,1], [0,1,0,0,0,1], [0,0,0,1,1,1], [0,0,0,1,1,1]])
-areas = areas_two_pass(test)
-contour = contours_moore(areas)[0]
-contour = contour_reduce(contour, 100)
-complex_contour = contour_coors_to_complex(contour)
-img = draw_complex_contour(complex_contour)
-cv2.imwrite('reduced_palm.tiff', img)
+if __name__ == '__main__':
+    palm = cv2.imread('palm.bmp')[:, :, 1]
+    objects = cv2.imread('objects.png')
+    # test = np.array([[0,1,1,0,0,1], [1,1,1,1,0,1], [0,1,0,0,0,1], [0,0,0,1,1,1], [0,0,0,1,1,1]])
+    areas = areas_two_pass(palm)
+    palm_contour = contours_moore(areas)[0]
+
+    areas = areas_two_pass(objects)
+    object_contours = contours_moore(areas)
+    thresh = 0.75
+    palms = [contour for contour in object_contours if contours_compare(contour, palm_contour) > thresh]
+
+    cv2.drawContours(palm, palms, -1, (0, 255, 0), 2)
+    cv2.imwrite('palms.png', palm)
