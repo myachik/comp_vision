@@ -216,7 +216,7 @@ def contour_extend(contour, length=None):
         max_edge_index = np.argmax(edges)
         new_vertice = (contour[max_edge_index - 1] + (contour[max_edge_index] - contour[max_edge_index - 1]) / 2).astype(np.int32)
         contour = np.insert(contour, max_edge_index, new_vertice, axis=0)
-        temp = np.insert(temp, max_edge_index, np.array([1, 1]), axis=0)
+        temp = np.insert(temp, max_edge_index, new_vertice, axis=0)
  
     return contour
  
