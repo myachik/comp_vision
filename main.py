@@ -27,7 +27,7 @@ while not ret:
     ret, frame = cap.read()
 frame = (cv2.resize(frame, (300, 300)) / 255.0).astype(np.float32)
 
-subt = cv2.BackgroundSubtractorMOG(10, 3, 0.8, 3)
+subt = cv2.BackgroundSubtractorMOG()
 
 while(True):
     ret, frame = cap.read()
